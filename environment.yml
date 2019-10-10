@@ -1,0 +1,9 @@
+name: cpd_env
+channels:
+  - conda-forge
+dependencies:
+  - python=2.7
+  - numpy
+  - scipy
+  - statsmodels
+  - xlwt
