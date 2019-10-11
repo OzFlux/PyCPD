@@ -29,9 +29,9 @@ def cpdBin(x, y, dx, nPerBin):
         mx = numpy.full(nBins, numpy.nan)
         my = numpy.full(nBins, numpy.nan)
         iprctile = numpy.arange(0, 101, (100. / float(nBins)))
-        # PRI - April 2019
-        # 'nearest' seems to give the same results as the Octave prctile function
-        #dx = numpy.percentile(x[iYaN], iprctile, interpolation="nearest")
+        # PRI - October 2019
+        # replace numpy.percentile() with Python translation of MATLAB/Octave
+        # prctile() and quantile() functions.
         dx = myprctile(x[iYaN], iprctile)
         xL = dx[:-1]
         xU = dx[1:]
@@ -47,12 +47,14 @@ def cpdBin(x, y, dx, nPerBin):
         xx = numpy.max(x)
         nx = dx*numpy.floor(nx / dx).astype(numpy.int)
         xx = dx*numpy.ceil(xx / dx).astype(numpy.int)
+        mx = numpy.full(len(numpy.arange(nx, xx, dx)), numpy.nan)
+        my = numpy.full(len(numpy.arange(nx, xx, dx)), numpy.nan)
         for jx in numpy.arange(nx, xx, dx):
             ix = numpy.where(((~numpy.isnan(x+y)) & (abs(x - jx) < 0.5*dx)) == True)[0]
             if len(ix) >= nPerBin:
-                nBins = nBins + 1
                 mx[nBins] = numpy.mean(x[ix])
                 my[nBins] = numpy.mean(y[ix])
+                nBins = nBins + 1
     else:
         xL = dx[:-1]
         xU = dx[1:]

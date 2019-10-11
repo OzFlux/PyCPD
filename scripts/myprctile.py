@@ -2,8 +2,8 @@ import numpy
 
 def myprctile(Y, q):
     """
+    Stripped down version of Octave prctile.m
     """
-    #print "Using myprctile"
     Q = myquantile(Y, q/float(100))
     return Q
 
@@ -14,7 +14,6 @@ def myquantile(x, p, method=5):
      - assumes 0 <= p[i] <= 1
      - only implements the switch case (method) 5
     """
-    #print "Using myquantile"
     x = numpy.sort(x)
     m = numpy.sum(~numpy.isnan(x))
     mm = numpy.full(len(p), m)

@@ -86,11 +86,6 @@ def cpdBootstrapUStarTh4Season20100901(t, NEE, uStar, T, fNight, fPlot, cSiteYr,
     nPerBin = 5
     if nPerDay == 24:
         nPerBin = 3
-    #elif nPerDay == 48:
-        #nPerBin = 5
-    #else:
-        #print "cpdBootstrapUStarTh4Season: nPerDay must be 24 or 48 (" + str(nPerDay) + ")"
-        #sys.exit()
     nPerSeason = nStrataN*nBins*nPerBin
     ntN = nSeasons*nPerSeason
 

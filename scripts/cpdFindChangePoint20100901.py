@@ -32,8 +32,7 @@ def cpdFindChangePoint20100901(xx, yy, iSeason, iStrata):
     Written by Alan Barr, last updated 7 Oct 2010
     Translated to Python by PRI, September 2019
     """
-    #print iSeason, iStrata
-    #	Initialize outputs.
+    # Initialize outputs.
     Cp2 = numpy.nan
     Cp3 = numpy.nan
     # s2 and s3 as dictionaries
@@ -89,10 +88,10 @@ def cpdFindChangePoint20100901(xx, yy, iSeason, iStrata):
         iAbv = numpy.arange(i, n)
         x1 = numpy.array(x)
         x1[iAbv] = x[i]
-        #a2 = scipy.stats.linregress(x1, y)
         x1a = numpy.column_stack((numpy.ones(len(x1)), x1))
+        # we use numpy.linalg.lstsq to duplicate the matrix left divide
+        # used in the original MATLAB code.
         a2 = numpy.linalg.lstsq(x1a, y, rcond=None)[0]
-        #yHat2 = a2[1] + a2[0]*x1
         yHat2 = a2[0] + a2[1]*x1
         SSEFull2 = numpy.sum((y - yHat2) ** 2)
         Fc2[i] = (SSERed2 - SSEFull2) / (SSEFull2 / (n - nFull2))
@@ -103,7 +102,8 @@ def cpdFindChangePoint20100901(xx, yy, iSeason, iStrata):
         x1 = numpy.array(x)
         x2 = numpy.multiply((x - x[i]), zAbv)
         X = numpy.column_stack((numpy.ones(len(x1)), x1, x2))
-        # linregress doesn't do multiple linear regression, have to use lstsq
+        # we use numpy.linalg.lstsq to duplicate the matrix left divide
+        # used in the original MATLAB code.
         a3 = numpy.linalg.lstsq(X, y, rcond=None)[0]
         yHat3 = a3[0] + a3[1]*x1 + a3[2]*x2
         SSEFull3 = numpy.sum((y - yHat3) ** 2)

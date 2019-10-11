@@ -93,27 +93,28 @@ def cpdAssignUStarTh20100901(Stats, fPlot, cSiteYr):
     # Extract variable arrays from Stats structure.
     # Reassign mt and Cp as x* to retain array shape,
     # then convert the extracted arrays to column vectors.
+    mt = numpy.full((nStrata*nWindows*nBoot), numpy.nan)
+    xmt = numpy.full((nWindows, nStrata, nBoot), numpy.nan)
+    Cp = numpy.full((nStrata*nWindows*nBoot), numpy.nan)
+    xCp = numpy.full((nWindows, nStrata, nBoot), numpy.nan)
+    b1 = numpy.full((nStrata*nWindows*nBoot), numpy.nan)
+    c2 = numpy.full((nStrata*nWindows*nBoot), numpy.nan)
+    cib1 = numpy.full((nStrata*nWindows*nBoot), numpy.nan)
+    cic2 = numpy.full((nStrata*nWindows*nBoot), numpy.nan)
+    p = numpy.full((nStrata*nWindows*nBoot), numpy.nan)
     for boot in range(nBoot):
         for season in range(nWindows):
             for tclass in range(nStrata):
-                if boot == 0 and season == 0 and tclass == 0:
-                    mt = numpy.full(1, Stats[boot][season][tclass]["mt"])
-                    Cp = numpy.full(1, Stats[boot][season][tclass]["Cp"])
-                    b1 = numpy.full(1, Stats[boot][season][tclass]["b1"])
-                    c2 = numpy.full(1, Stats[boot][season][tclass]["c2"])
-                    cib1 = numpy.full(1, Stats[boot][season][tclass]["cib1"])
-                    cic2 = numpy.full(1, Stats[boot][season][tclass]["cic2"])
-                    p = numpy.full(1, Stats[boot][season][tclass]["p"])
-                else:
-                    mt = numpy.append(mt, Stats[boot][season][tclass]["mt"])
-                    Cp = numpy.append(Cp, Stats[boot][season][tclass]["Cp"])
-                    b1 = numpy.append(b1, Stats[boot][season][tclass]["b1"])
-                    c2 = numpy.append(c2, Stats[boot][season][tclass]["c2"])
-                    cib1 = numpy.append(cib1, Stats[boot][season][tclass]["cib1"])
-                    cic2 = numpy.append(cic2, Stats[boot][season][tclass]["cic2"])
-                    p = numpy.append(p, Stats[boot][season][tclass]["p"])
-    xmt = numpy.array(mt)
-    xCp = numpy.array(Cp)
+                xmt[season, tclass, boot] = Stats[boot][season][tclass]["mt"]
+                xCp[season, tclass, boot] = Stats[boot][season][tclass]["Cp"]
+                i = season + tclass*nWindows + boot*nWindows*nStrata
+                mt[i] = Stats[boot][season][tclass]["mt"]
+                Cp[i] = Stats[boot][season][tclass]["Cp"]
+                b1[i] = Stats[boot][season][tclass]["b1"]
+                c2[i] = Stats[boot][season][tclass]["c2"]
+                cib1[i] = Stats[boot][season][tclass]["cib1"]
+                cic2[i] = Stats[boot][season][tclass]["cic2"]
+                p[i] = Stats[boot][season][tclass]["p"]
     pSig = 0.05
     fP = numpy.where((p <= pSig), 1, 0)
     # Determine if Stats input is from the operational 2-parameter
@@ -212,14 +213,16 @@ def cpdAssignUStarTh20100901(Stats, fPlot, cSiteYr):
     #       change point value that passes all QC checks.
     #       So, having changed the definition of nStrata and nBoot, we will
     #       re-instate the check.
-    if nSelect < nSelectN:
-        cFailure = "Too few selected change points: " + str(int(nSelect)) + ", " + str(int(nSelectN))
-        print cFailure
-        return CpA, nA, tW, CpW, cMode, cFailure, fSelect, sSine, FracSig, FracModeD, FracSelect
+    # PRI - comment out this check for testing purposes only, to match current MATLAB
+    #       code.
+    #if nSelect < nSelectN:
+        #cFailure = "Too few selected change points: " + str(int(nSelect)) + ", " + str(int(nSelectN))
+        #print cFailure
+        #return CpA, nA, tW, CpW, cMode, cFailure, fSelect, sSine, FracSig, FracModeD, FracSelect
     # Aggregate the values to season and year.
-    xCpSelect = numpy.full((len(xCp)), numpy.nan)
-    xCpSelect[iSelect] = xCp[iSelect]
-    xCpGF = numpy.copy(xCpSelect)
+    CpSelect = numpy.full((Cp.shape), numpy.nan)
+    CpSelect[iSelect] = Cp[iSelect]
+    xCpGF = numpy.reshape(CpSelect,(nWindows, nStrata, nBoot), order='F')
     if nBoot == 1:
         # PRI - needed to reverse order of nanmean/sum and fcx2colvec to get expected
         #       behaviour in Octave when nBoot=1
@@ -228,23 +231,26 @@ def cpdAssignUStarTh20100901(Stats, fPlot, cSiteYr):
         CpA = numpy.nanmean(xCpGF)
         nA = numpy.sum(~numpy.isnan(xCpGF))
     else:
-        if nBoot > 1:
-            # PRI - redundant, left in solely to be consistent with MATLAB code
-            # CpA=fcx2colvec(nanmean(reshape(xCpGF,dot(nWindows,nStrata),nBoot)))
-            # nA=fcx2colvec(sum(logical_not(isnan(reshape(xCpSelect,dot(nWindows,nStrata),nBoot)))))
-            CpA = numpy.nanmean(xCpGF)
-            nA = numpy.sum(~numpy.isnan(xCpGF))
+        # PRI - redundant, left in solely to be consistent with MATLAB code
+        # PRI - no, not redundant, PRI is wiser now ...
+        # CpA=fcx2colvec(nanmean(reshape(xCpGF,dot(nWindows,nStrata),nBoot)))
+        # nA=fcx2colvec(sum(logical_not(isnan(reshape(xCpSelect,dot(nWindows,nStrata),nBoot)))))
+        a = numpy.reshape(xCpGF, (nWindows*nStrata, nBoot), order='F')
+        CpA = numpy.nanmean(a, axis=0)
+        nA = numpy.sum(~numpy.isnan(a), axis=0)
     # Calculate mean tW and CpW for each window based on Select data only.
     # Because the bootstrap varies the number of windows among bootstraps,
     # base on the median number of windows and reshape sorted data.
-    nW = numpy.nanmedian(numpy.sum(~numpy.isnan(xmt.reshape(nWindows, nStrata*nBoot)), axis=0))
+    a = numpy.reshape(xmt, (nWindows, nStrata*nBoot), order='F')
+    nW = numpy.nanmedian(numpy.sum(~numpy.isnan(a), axis=0))
     mtSelect = numpy.sort(mt[iSelect])
     i = numpy.argsort(mt[iSelect])
     CpSelect = Cp[iSelect[i]]
     iprctile = numpy.arange(0, 101, 100/nW)
-    #xBins = numpy.percentile(mtSelect, iprctile)
     xBins = myprctile(mtSelect, iprctile)
     n, tW, CpW = cpdBin(mtSelect, CpSelect, xBins, 0)
+    # This is the end of the translated code.
+    # The following code to detect seasonal trends is not implemented.
     # Fit annual sine curve
     bSine = numpy.array([1, 1, 1])
     # PRI - unable to get the following code to run in Octave

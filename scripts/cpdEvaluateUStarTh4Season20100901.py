@@ -83,7 +83,7 @@ def cpdEvaluateUStarTh4Season20100901(t, NEE, uStar, T, fNight, fPlot, cSiteYr):
         nPerBin = 3
     nPerSeasonN = nStrataN*nBins*nPerBin
     nN = nSeasons*nPerSeasonN
-    itOut = numpy.where((uStar < 0) | (uStar > 3))[0]
+    itOut = numpy.where((uStar[~numpy.isnan(uStar)] < 0) | (uStar[~numpy.isnan(uStar)] > 3))[0]
     uStar[itOut] = numpy.nan
     itAnnual = numpy.where((fNight == 1) & (~numpy.isnan(NEE+uStar+T)))[0]
     ntAnnual = len(itAnnual)
@@ -159,8 +159,14 @@ def cpdEvaluateUStarTh4Season20100901(t, NEE, uStar, T, fNight, fPlot, cSiteYr):
         for iStrata in range(0, int(nStrata)):
             xls_out["cpdBin_input"][iSeason][iStrata] = {}
             xls_out["cpdBin_output"][iSeason][iStrata] = {}
-            itStrata = numpy.where((T >= TTh[iStrata]) & (T <= TTh[iStrata + 1]))[0]
+            #itStrata = numpy.where((T >= TTh[iStrata]) & (T <= TTh[iStrata + 1]))[0]
+            # using numpy.greater_equal() with "where" to suppress NaN warnings
+            c1 = numpy.greater_equal(T, TTh[iStrata], where=~numpy.isnan(T))
+            c2 = numpy.less_equal(T, TTh[iStrata+1], where=~numpy.isnan(T))
+            itStrata = numpy.where(c1 & c2)[0]
             itStrata = numpy.intersect1d(itStrata, itSeason)
+            if len(itStrata) == 0:
+                print "rseting"
 
             xls_out["cpdBin_input"][iSeason][iStrata]["itStrata"] = itStrata
             xls_out["cpdBin_input"][iSeason][iStrata]["uStar"] = uStar[itStrata]
@@ -207,6 +213,13 @@ def cpdEvaluateUStarTh4Season20100901(t, NEE, uStar, T, fNight, fPlot, cSiteYr):
     return Cp2, Stats2, Cp3, Stats3
 
 def cpdEvaluateUStarTh4Season_xls_output(xls_out):
+    """
+    Purpose:
+     Write the intermediate results from cpdBin and cpdFindChangePoint20100901
+     to an Excel file.
+    Author: PRI
+    Date: October 2019
+    """
     out_path = "/home/peter/Python/cpd/tests/output/"
     out_path = os.path.join(out_path, xls_out["cSiteYr"])
     if not os.path.isdir(out_path):

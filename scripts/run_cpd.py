@@ -3,12 +3,20 @@ import datetime
 import time
 import glob
 import os
+import warnings
 # 3rd party modules
 import numpy
 import xlwt
 # local modules
 from cpdBootstrapUStarTh4Season20100901 import cpdBootstrapUStarTh4Season20100901
 from cpdAssignUStarTh20100901 import cpdAssignUStarTh20100901
+
+# PRI really hates to do this but can find no better way to suppress multiple
+# RuntimeWarnings from Numpy except kludgy inline code hacks.
+# PRI suggests commenting out this line when developing and testing and ony
+# leaving it in for production.
+# The whole thing needs to be done with masked arrays or pandas.
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 exitcode = 0
 error_str = ""
@@ -17,7 +25,7 @@ error_str = ""
 input_folder = "/home/peter/Python/cpd/comparisons/input/"
 output_folder = "/home/peter/Python/cpd/comparisons/output/"
 # get a list of files in the input folder
-d = glob.glob(os.path.join(input_folder, "*_qca_ustar_*.csv"))
+d = sorted(glob.glob(os.path.join(input_folder, "*_qca_ustar_*.csv")))
 print str(len(d)) + " files found"
 for file_number in range(len(d)):
     print "Processing ", d[file_number]
@@ -62,7 +70,7 @@ for file_number in range(len(d)):
     d_path, d_name = os.path.split(d[file_number])
     cSiteYr = d_name.replace(".txt", "")
     cSiteYr = cSiteYr.replace("_ut", "_barr")
-    nBoot = 1
+    nBoot = 10
     fPlot = 0
     t0 = time.time()
     print "Calling cpdBootstrapUStarTh4Season20100901"
@@ -73,6 +81,7 @@ for file_number in range(len(d)):
     print "Calling cpdAssignUStarTh201009"
     Cp, n, tW, CpW, cMode, cFailure, fSelect, sSine, FracSig, FracModeD, FracSelect = \
         cpdAssignUStarTh20100901(Stats2,fPlot,cSiteYr)
+    print "This site took " + str(time.time() - t0)
 
     if len(cFailure) == 0:
         cSiteYr = cSiteYr.replace(".csv", "")
@@ -81,8 +90,11 @@ for file_number in range(len(d)):
         output_name = site_str + "_uscp_" + year_str + "_py.txt"
         output_file = os.path.join(output_folder, output_name)
         with open(output_file, "w") as f:
-            line = str(Cp) + "\n"
-            f.write(line)
+            if numpy.isscalar(Cp):
+                f.write(str(Cp) + "\n")
+            else:
+                for i in range(len(Cp)):
+                    f.write(str(Cp[i]) + "\n")
             f.write("\n")
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             line = ";processed with ustar_cpd 1.0 (Python) on " + now + "\n"

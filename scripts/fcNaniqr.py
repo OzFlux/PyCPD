@@ -34,18 +34,15 @@ def fcnaniqr(X):
     d = X.shape
     d = numpy.setdiff1d(d, 1)
     nd = len(d)
-    #d2 = [e for e in list(X.shape) if e != 1]
-    #nd2 = len(d2)
     if nd == 1:
         iYaN = numpy.where(~numpy.isnan(X))[0]
         nYaN = len(iYaN)
         IQR = numpy.nan
         if nYaN <= 3:
             y = X[iYaN]
-            #yN = numpy.percentile(y, 25, interpolation="nearest")
-            #yX = numpy.percentile(y, 75, interpolation="nearest")
-            #yN = numpy.percentile(y, 25)
-            #yX = numpy.percentile(y, 75)
+            # PRI - October 2019
+            # replace numpy.percentile() with Python translation of MATLAB/Octave
+            # prctile() and quantile() functions.
             yN, yX = myprctile(y, numpy.array([25, 75]))
             IQR = yX - yN
     else:
@@ -57,10 +54,9 @@ def fcnaniqr(X):
                 nYaN = len(iYaN)
                 if nYaN > 3:
                     y = X[iYaN, ic]
-                    #yN = numpy.percentile(y, 25, interpolation="nearest")
-                    #yX = numpy.percentile(y, 75, interpolation="nearest")
-                    #yN = numpy.percentile(y, 25)
-                    #yX = numpy.percentile(y, 75)
+                    # PRI - October 2019
+                    # replace numpy.percentile() with Python translation of MATLAB/Octave
+                    # prctile() and quantile() functions.
                     yN, yX = myprctile(y, numpy.array([25, 75]))
                     IQR[ic] = yX - yN
         else:
@@ -73,10 +69,9 @@ def fcnaniqr(X):
                         nYaN = len(iYaN)
                         if nYaN > 3:
                             y = X[iYaN, ic, iq]
-                            #yN = numpy.percentile(y, 25, interpolation="nearest")
-                            #yX = numpy.percentile(y, 75, interpolation="nearest")
-                            #yN = numpy.percentile(y, 25)
-                            #yX = numpy.percentile(y, 75)
+                            # PRI - October 2019
+                            # replace numpy.percentile() with Python translation of MATLAB/Octave
+                            # prctile() and quantile() functions.
                             yN, yX = myprctile(y, numpy.array([25, 75]))
                             IQR[ic, iq] = yX - yN
     return IQR
